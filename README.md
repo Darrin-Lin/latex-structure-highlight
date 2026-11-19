@@ -121,7 +121,7 @@ The extension sends no network requests or telemetry. It reads local compiler
 output and stores selected AUX paths in extension workspace state. The explicit
 code-color command changes your user settings; uninstalling does not remove that rule.
 
-See [LICENSE](LICENSE) for original code terms and
+The original project code is licensed under the [MIT License](LICENSE). See
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for palette attribution.
 The palettes are inspired adaptations, without affiliation or endorsement by
 GitHub, Dracula, Nord or Solarized.

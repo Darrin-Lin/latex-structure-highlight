@@ -115,6 +115,6 @@ def greet(name):
 擴充套件工作區狀態。只有明確執行的程式碼文字色指令會修改使用者設定，解除安裝
 不會移除該規則。
 
-原始程式碼條款見 [LICENSE](LICENSE)，配色來源與授權見
+專案原創程式碼採用 [MIT 授權](LICENSE)，配色來源與授權見
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。配色為靈感改編，與 GitHub、Dracula、
 Nord 或 Solarized 沒有官方關係或背書。

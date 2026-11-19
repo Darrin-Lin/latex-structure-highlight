@@ -191,7 +191,7 @@
     }
   },
   "private": true,
-  "license": "UNLICENSED",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/Darrin-Lin/latex-structure-highlight.git"
