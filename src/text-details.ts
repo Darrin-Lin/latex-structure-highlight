@@ -1,9 +1,9 @@
-'use strict';
-function unsafeUnderscores(text, source, codeSpans) {
-  const result = [];
-  let dollar = '', delimiter = '', mathEnvs = [];
+import type { Span } from './types';
+export function unsafeUnderscores(text: string, source: string, codeSpans: Span[]): Span[] {
+  const result: Span[] = [];
+  let dollar = '', delimiter = '', mathEnvs: string[] = [];
   const mathEnvironment = /^(?:math|displaymath|equation|align|alignat|flalign|gather|multline|eqnarray|IEEEeqnarray|split|aligned|alignedat|gathered|cases|array|[pbBvV]?matrix|smallmatrix)\*?$/;
-  function argEnd(at, opening = '{', closing = '}') {
+  function argEnd(at: number, opening = '{', closing = '}'): number | null {
     while (at < source.length && /\s/.test(source[at])) at++;
     if (source[at] !== opening) return null;
     let depth = 1;
@@ -65,4 +65,3 @@ function unsafeUnderscores(text, source, codeSpans) {
   }
   return result;
 }
-exports.unsafeUnderscores = unsafeUnderscores;

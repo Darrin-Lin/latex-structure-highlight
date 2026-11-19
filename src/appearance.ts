@@ -1,14 +1,15 @@
-'use strict';
-const vscode = require('vscode');
-const { palettes, resolvePalette } = require('./palettes');
-const { translator } = require('./i18n');
-function paletteFor(document) {
+import * as vscode from 'vscode';
+import { palettes, resolvePalette, type Palette } from './palettes';
+import { translator } from './i18n';
+interface TokenRule { name?: string; scope?: string | string[]; settings?: Record<string, unknown> }
+interface TokenColors { textMateRules?: TokenRule[]; [key: string]: unknown }
+export function paletteFor(document?: vscode.TextDocument): Palette {
   const config = vscode.workspace.getConfiguration('latexStructureHighlight', document && document.uri);
   const light = [vscode.ColorThemeKind.Light, vscode.ColorThemeKind.HighContrastLight].includes(vscode.window.activeColorTheme.kind);
   return resolvePalette(config.get('colorScheme', 'auto'), light, config.get('colors', {}));
 }
-function createAppearance(context) {
-  const cache = new Map();
+export function createAppearance(context: vscode.ExtensionContext) {
+  const cache = new Map<string, Record<string, vscode.TextEditorDecorationType>>();
   function clear() {
     for (const types of cache.values()) Object.values(types).forEach(type => type.dispose());
     cache.clear();
@@ -30,7 +31,7 @@ function createAppearance(context) {
   context.subscriptions.push(vscode.commands.registerCommand('latexStructureHighlight.applyCodeTextColor', async () => {
     const doc = vscode.window.activeTextEditor && vscode.window.activeTextEditor.document;
     const editor = vscode.workspace.getConfiguration('editor');
-    const saved = editor.inspect('tokenColorCustomizations');
+    const saved = editor.inspect<TokenColors>('tokenColorCustomizations');
     const custom = { ...(saved && saved.globalValue || {}) };
     const name = 'LaTeX embedded code base text';
     custom.textMateRules = [...(custom.textMateRules || []).filter(rule => rule.name !== name), {
@@ -41,10 +42,10 @@ function createAppearance(context) {
   }));
   return {
     clear,
-    forDocument(document) {
+    forDocument(document: vscode.TextDocument): Record<string, vscode.TextEditorDecorationType> {
       const key = document.uri.toString();
-      if (cache.has(key)) return cache.get(key);
-      const palette = paletteFor(document), types = {};
+      if (cache.has(key)) return cache.get(key)!;
+      const palette = paletteFor(document), types: Record<string, vscode.TextEditorDecorationType> = {};
       for (const [name, color] of Object.entries(palette)) {
         if (['codeText', 'codeBackground', 'error', 'errorBackground'].includes(name)) continue;
         types[name] = vscode.window.createTextEditorDecorationType({
@@ -64,5 +65,3 @@ function createAppearance(context) {
     }
   };
 }
-exports.createAppearance = createAppearance;
-exports.paletteFor = paletteFor;

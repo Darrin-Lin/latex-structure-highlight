@@ -1,11 +1,13 @@
-'use strict';
-function unclosedRanges(text, source, codeSpans) {
-  const errors = [], environments = [], braces = [], math = [], groups = [], left = [];
-  const add = token => errors.push([token.start, token.end]);
-  function close(stack, name, token) {
+import type { Span } from './types';
+interface Token { start: number; end: number; name?: string }
+export function unclosedRanges(text: string, source: string, codeSpans: Span[]): Span[] {
+  const errors: Span[] = [];
+  const environments: Token[] = [], braces: Token[] = [], math: Token[] = [], groups: Token[] = [], left: Token[] = [];
+  const add = (token: Token) => errors.push([token.start, token.end]);
+  function close(stack: Token[], name: string, token: Token): void {
     const index = stack.map(item => item.name).lastIndexOf(name);
     if (index === -1) { add(token); return; }
-    while (stack.length - 1 > index) add(stack.pop());
+    while (stack.length - 1 > index) add(stack.pop()!);
     stack.pop();
   }
   for (let i = 0; i < text.length;) {
@@ -23,7 +25,7 @@ function unclosedRanges(text, source, codeSpans) {
         continue;
       }
       const delimiter = text[i + 1];
-      const token = { start: i, end: i + 2 };
+      const token: Token = { start: i, end: i + 2 };
       if (delimiter === '(' || delimiter === '[') { math.push({ ...token, name: delimiter }); i += 2; continue; }
       if (delimiter === ')' || delimiter === ']') { close(math, delimiter === ')' ? '(' : '[', token); i += 2; continue; }
       const command = /^\\([A-Za-z@]+)\*?/.exec(text.slice(i));
@@ -83,4 +85,3 @@ function unclosedRanges(text, source, codeSpans) {
   for (const stack of [environments, braces, math, groups, left]) stack.forEach(add);
   return errors.sort((a, b) => a[0] - b[0]);
 }
-exports.unclosedRanges = unclosedRanges;

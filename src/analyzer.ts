@@ -1,8 +1,8 @@
-'use strict';
-const vscode = require('vscode');
+import type { Analysis, SpanKind } from './types';
+import { unsafeUnderscores } from './text-details';
+import { unclosedRanges } from './unclosed';
 
-// Build an offset-preserving view without comments, escaped commands or inline verbatim.
-function visibleSource(text) {
+export function visibleSource(text: string): string {
   const chars = text.split('');
   for (let i = 0; i < text.length; i++) {
     if (text[i] === '%') {
@@ -24,15 +24,15 @@ function visibleSource(text) {
   return chars.join('');
 }
 
-function analyze(text) {
+export function analyze(text: string): Analysis {
   const source = visibleSource(text);
-  const result = { preamble: [], code: [], environment: [], figure: [], table: [], math: [], caption: [], label: [], reference: [], citation: [], part: [], chapter: [], section: [], subsection: [], subsubsection: [], paragraph: [], subparagraph: [], texttt: [], unsafeUnderscore: [] };
+  const result: Analysis = { preamble: [], code: [], environment: [], figure: [], table: [], math: [], caption: [], label: [], reference: [], citation: [], part: [], chapter: [], section: [], subsection: [], subsubsection: [], paragraph: [], subparagraph: [], texttt: [], unsafeUnderscore: [], unclosed: [] };
   const commands = /\\([A-Za-z@]+)(\*)?/g;
   let codeEnvironment = null;
   let codeStart = 0;
   let documentStart = null;
   let match;
-  function argumentEnd(start) {
+  function argumentEnd(start: number): number {
     let position = start;
     while (/\s/.test(source[position] || '') && position < source.length) position++;
     for (let count = 0; count < 4; count++) {
@@ -60,7 +60,7 @@ function analyze(text) {
       if (!env) continue;
       const name = env[1].trim();
       const end = commands.lastIndex + env[0].length;
-      let kind = /^(figure|subfigure)\*?$/.test(name) ? 'figure' : /^(table|tabular|tabularx|longtable|subtable)\*?$/.test(name) ? 'table' : /^(equation|align|alignat|gather|multline|displaymath|math|eqnarray)\*?$/.test(name) ? 'math' : 'environment';
+      const kind: SpanKind = /^(figure|subfigure)\*?$/.test(name) ? 'figure' : /^(table|tabular|tabularx|longtable|subtable)\*?$/.test(name) ? 'table' : /^(equation|align|alignat|gather|multline|displaymath|math|eqnarray)\*?$/.test(name) ? 'math' : 'environment';
       result[kind].push([start, end]);
       if (command === 'begin' && name === 'document' && documentStart === null) documentStart = start;
       if (command === 'begin' && /^(lstlisting|minted|pyglist|verbatim|Verbatim|[A-Za-z]*code)\*?$/.test(name)) {
@@ -79,7 +79,7 @@ function analyze(text) {
       }
       continue;
     }
-    let kind;
+    let kind: SpanKind | undefined;
     if (command === 'texttt') {
       const brace = /^\s*\{/.exec(source.slice(commands.lastIndex));
       const end = argumentEnd(commands.lastIndex);
@@ -89,7 +89,7 @@ function analyze(text) {
         if (contentEnd >= contentStart) result.texttt.push([contentStart, contentEnd]);
       }
     }
-    if (/^(part|chapter|section|subsection|subsubsection|paragraph|subparagraph)$/.test(command)) kind = command;
+    if (/^(part|chapter|section|subsection|subsubsection|paragraph|subparagraph)$/.test(command)) kind = command as SpanKind;
     else if (/^(label|hypertarget)$/.test(command)) kind = 'label';
     else if (/^(ref|pageref|eqref|autoref|Autoref|cref|Cref|cpageref|Cpageref|vref|Vref|nameref|hyperref|subref|subref\*|refrange|crefrange|Crefrange)$/.test(command)) kind = 'reference';
     else if (/cite/i.test(command) || /^(bibentry|nocite)$/.test(command)) kind = 'citation';
@@ -97,49 +97,7 @@ function analyze(text) {
     if (kind) result[kind].push([start, argumentEnd(commands.lastIndex)]);
   }
   if (documentStart !== null && documentStart > 0) result.preamble.push([0, documentStart]);
-  result.unsafeUnderscore = require('./text-details').unsafeUnderscores(text, source, result.code);
-  result.unclosed = require('./unclosed').unclosedRanges(text, source, result.code);
+  result.unsafeUnderscore = unsafeUnderscores(text, source, result.code);
+  result.unclosed = unclosedRanges(text, source, result.code);
   return result;
 }
-
-function activate(context) {
-  const appearance = require('./appearance').createAppearance(context);
-  function update(editor) {
-    if (!editor || !['latex', 'tex'].includes(editor.document.languageId)) return;
-    const config = vscode.workspace.getConfiguration('latexStructureHighlight', editor.document.uri);
-    const spans = config.get('enabled', true) ? analyze(editor.document.getText()) : {};
-    const types = appearance.forDocument(editor.document);
-    for (const [name, type] of Object.entries(types)) {
-      let offsets = spans[name] || [];
-      if (name === 'preamble' && !config.get('dimPreamble', true)) offsets = [];
-      if (name === 'code' && !config.get('codeBackground', true)) offsets = [];
-      const ranges = offsets.map(([a, b]) => {
-        // Do not shade the closing delimiter's line with the code background.
-        if (name === 'code' && b > a) b--;
-        return new vscode.Range(editor.document.positionAt(a), editor.document.positionAt(b));
-      });
-      editor.setDecorations(type, ranges);
-    }
-    listingNumbers.update(editor, spans.code || [], config);
-  }
-  function refresh() { vscode.window.visibleTextEditors.forEach(update); }
-  let timer;
-  context.subscriptions.push(
-    vscode.window.onDidChangeVisibleTextEditors(refresh),
-    vscode.workspace.onDidChangeTextDocument(event => {
-      clearTimeout(timer);
-      timer = setTimeout(() => {
-        refresh();
-      }, 100);
-    }),
-    vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('latexStructureHighlight')) { appearance.clear(); refresh(); } }),
-    vscode.window.onDidChangeActiveColorTheme(() => { appearance.clear(); refresh(); }),
-    { dispose() { clearTimeout(timer); } }
-  );
-  const listingNumbers = require('./listing-lines').createListingNumbers(context, visibleSource);
-  refresh();
-  require('./numbers').activateNumbers(context, analyze);
-}
-exports.activate = activate;
-exports.analyze = analyze;
-exports.visibleSource = visibleSource;

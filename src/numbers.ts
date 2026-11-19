@@ -1,95 +1,38 @@
-'use strict';
-const vscode = require('vscode');
-const path = require('path');
-const { translator } = require('./i18n');
+import * as vscode from 'vscode';
+import * as path from 'node:path';
+import { translator } from './i18n';
+import { parseCompiled, group, clean } from './compiled-data';
+import type { Analysis, Analyzer, CompiledData } from './types';
+interface NumberItem { kind: string; start: number; end: number; title: string; number: string | null; id: string }
+interface NumberModel { items: NumberItem[]; aux?: string; missing?: boolean; stale?: boolean; error?: boolean }
+interface CompiledOutput { data: CompiledData; aux: string; stale: boolean; missing?: false }
+interface MissingOutput { missing: true; aux: string }
 
-function group(text, start) {
-  let i = start;
-  while (i < text.length && /\s/.test(text[i])) i++;
-  if (text[i] !== '{') return null;
-  const begin = ++i;
-  let depth = 1;
-  while (i < text.length) {
-    if (text[i] === '\\' && /[{}%\\]/.test(text[i + 1] || '')) { i += 2; continue; }
-    if (text[i] === '{') depth++;
-    if (text[i] === '}' && --depth === 0) return { value: text.slice(begin, i), end: i + 1 };
-    i++;
-  }
-  return null;
-}
-function groups(text) {
-  const result = [];
-  let at = 0, next;
-  while ((next = group(text, at))) { result.push(next.value); at = next.end; }
-  return result;
-}
-function clean(text) {
-  return text.replace(/\\(?:protect|ignorespaces|relax)\b/g, '')
-    .replace(/\\[a-zA-Z@]+\*?/g, '').replace(/[{}]/g, '').replace(/[~\s]+/g, ' ').trim();
-}
-function parseCompiled(text, data = { labels: new Map(), citations: new Map(), entries: [], inputs: [] }) {
-  const pattern = /\\(newlabel|bibcite|contentsline|@input|entry)\b/g;
-  let match;
-  while ((match = pattern.exec(text))) {
-    const first = group(text, pattern.lastIndex);
-    if (!first) continue;
-    if (match[1] === '@input') { data.inputs.push(first.value); continue; }
-    const second = group(text, first.end);
-    if (!second) continue;
-    if (match[1] === 'newlabel') {
-      const fields = groups(second.value);
-      if (fields.length >= 2 && !/@cref$/.test(first.value)) data.labels.set(first.value, { number: clean(fields[0]), page: clean(fields[1]), title: clean(fields[2] || ''), anchor: fields[3] || '' });
-    } else if (match[1] === 'bibcite') {
-      const fields = groups(second.value);
-      data.citations.set(first.value, clean(fields.length ? fields[0] : second.value));
-    } else if (match[1] === 'contentsline') {
-      const numberline = /\\numberline\s*/.exec(second.value);
-      if (numberline) {
-        const number = group(second.value, numberline.index + numberline[0].length);
-        if (number) data.entries.push({ kind: first.value, number: clean(number.value), title: clean(second.value.slice(number.end)) });
-      }
-    } else if (match[1] === 'entry') {
-      const end = text.indexOf('\\endentry', second.end);
-      if (end !== -1) {
-        const body = text.slice(second.end, end);
-        const number = /\\field\{labelnumber\}\s*/.exec(body);
-        if (number) {
-          const value = group(body, number.index + number[0].length);
-          const prefix = /\\field\{labelprefix\}\s*/.exec(body);
-          const prefixValue = prefix && group(body, prefix.index + prefix[0].length);
-          if (value) data.citations.set(first.value, clean((prefixValue ? prefixValue.value : '') + value.value));
-        }
-      }
-    }
-  }
-  return data;
-}
-
-function activateNumbers(context, analyze) {
-  const change = new vscode.EventEmitter();
-  const auxOverrides = new Map(Object.entries(context.workspaceState.get('auxOverrides', {})));
-  const cache = new Map();
-  const watched = new Set();
+export function activateNumbers(context: vscode.ExtensionContext, analyze: Analyzer): void {
+  const change = new vscode.EventEmitter<void>();
+  const auxOverrides = new Map(Object.entries(context.workspaceState.get<Record<string, string>>('auxOverrides', {})));
+  const cache = new Map<string, { version: number; promise: Promise<NumberModel> }>();
+  const watched = new Set<string>();
   const selector = [{ language: 'latex' }, { language: 'tex' }];
-  const config = doc => vscode.workspace.getConfiguration('latexStructureHighlight', doc.uri);
+  const config = (doc: vscode.TextDocument) => vscode.workspace.getConfiguration('latexStructureHighlight', doc.uri);
   function refresh() { cache.clear(); change.fire(); }
-  function watch(file) {
+  function watch(file: string): void {
     if (watched.has(file)) return;
     watched.add(file);
     const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(path.dirname(file), path.basename(file)));
     context.subscriptions.push(watcher, watcher.onDidChange(refresh), watcher.onDidCreate(refresh), watcher.onDidDelete(refresh));
   }
-  async function exists(file) {
+  async function exists(file: string): Promise<vscode.FileStat | null> {
     try { return await vscode.workspace.fs.stat(vscode.Uri.file(file)); } catch { return null; }
   }
-  async function read(file) { return Buffer.from(await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString('utf8'); }
-  async function locate(doc) {
+  async function read(file: string): Promise<string> { return Buffer.from(await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString('utf8'); }
+  async function locate(doc: vscode.TextDocument): Promise<{ aux: string; root: string }> {
     const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
     const base = folder ? folder.uri.fsPath : path.dirname(doc.uri.fsPath);
     const explicit = auxOverrides.get(doc.uri.toString()) || config(doc).get('auxFile', '');
     if (explicit) return { aux: path.resolve(base, explicit), root: doc.uri.fsPath };
     let root = doc.uri.fsPath, content = doc.getText();
-    const visited = new Set();
+    const visited = new Set<string>();
     // Follow explicit TeX root directives without guessing an unrelated master file.
     for (let i = 0; i < 8 && !visited.has(root); i++) {
       visited.add(root);
@@ -106,15 +49,15 @@ function activateNumbers(context, analyze) {
     for (const aux of [...new Set(candidates)]) if (await exists(aux)) return { aux, root };
     return { aux: candidates[0], root };
   }
-  async function load(doc) {
+  async function load(doc: vscode.TextDocument): Promise<CompiledOutput | MissingOutput> {
     const { aux, root } = await locate(doc);
     watch(aux);
     watch(aux.replace(/\.aux$/i, '.bbl'));
     const stat = await exists(aux);
     if (!stat) return { missing: true, aux };
     const data = parseCompiled('');
-    const seen = new Set();
-    async function readAux(file, depth = 0) {
+    const seen = new Set<string>();
+    async function readAux(file: string, depth = 0): Promise<void> {
       if (seen.has(file) || depth > 12 || seen.size > 100) return;
       seen.add(file);
       watch(file);
@@ -131,9 +74,9 @@ function activateNumbers(context, analyze) {
       try { parseCompiled(await read(aux.replace(/\.aux$/i, suffix)), data); } catch { /* Optional bibliography output. */ }
     }
     const rootStat = await exists(root), docStat = await exists(doc.uri.fsPath);
-    return { data, aux, stale: doc.isDirty || (rootStat && rootStat.mtime > stat.mtime) || (docStat && docStat.mtime > stat.mtime) };
+    return { data, aux, stale: doc.isDirty || !!(rootStat && rootStat.mtime > stat.mtime) || !!(docStat && docStat.mtime > stat.mtime) };
   }
-  async function model(doc) {
+  async function model(doc: vscode.TextDocument): Promise<NumberModel> {
     const key = doc.uri.toString();
     const previous = cache.get(key);
     if (previous && previous.version === doc.version) return previous.promise;
@@ -141,19 +84,19 @@ function activateNumbers(context, analyze) {
     cache.set(key, { version: doc.version, promise });
     try { return await promise; } catch { cache.delete(key); return { items: [], error: true }; }
   }
-  async function makeModel(doc) {
+  async function makeModel(doc: vscode.TextDocument): Promise<NumberModel> {
     const compiled = await load(doc);
     if (compiled.missing) return { ...compiled, items: [] };
-    const text = doc.getText(), spans = analyze(text), items = [], counts = new Map();
+    const text = doc.getText(), spans = analyze(text), items: NumberItem[] = [], counts = new Map<string, number>();
     const entries = compiled.data.entries;
-    const usedEntries = new Set();
-    function add(kind, start, end, title, number) {
+    const usedEntries = new Set<number>();
+    function add(kind: string, start: number, end: number, title: string, number: string | null): void {
       const identity = `${kind}:${title}`;
       const occurrence = counts.get(identity) || 0;
       counts.set(identity, occurrence + 1);
       items.push({ kind, start, end, title, number, id: `${doc.uri.toString()}|${identity}|${occurrence}` });
     }
-    function argumentsAt(start, end) {
+    function argumentsAt(start: number, end: number): { raw: string; arg: string } {
       const raw = text.slice(start, end);
       const command = /^\\[A-Za-z@]+\*?/.exec(raw);
       let at = command ? command[0].length : 0;
@@ -168,7 +111,7 @@ function activateNumbers(context, analyze) {
       return { raw, arg: arg ? arg.value : '' };
     }
     for (const kind of ['part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph', 'caption']) {
-      for (const [start, end] of spans[kind]) {
+      for (const [start, end] of spans[kind as keyof Analysis]) {
         const { raw, arg } = argumentsAt(start, end);
         if (/^\\\w+\*/.test(raw)) continue; // Starred commands are intentionally unnumbered.
         const title = clean(arg);
@@ -185,7 +128,7 @@ function activateNumbers(context, analyze) {
       }
     }
     for (const kind of ['label', 'reference', 'citation']) {
-      for (const [start, end] of spans[kind]) {
+      for (const [start, end] of spans[kind as keyof Analysis]) {
         const { raw, arg } = argumentsAt(start, end);
         const keys = arg.split(',').map(key => key.trim()).filter(Boolean);
         if (!keys.length) continue;
@@ -204,13 +147,13 @@ function activateNumbers(context, analyze) {
     }
     return { ...compiled, items };
   }
-  const enabled = doc => config(doc).get('enabled', true);
-  const showNumbers = doc => enabled(doc) && config(doc).get('showNumbers', true);
-  function tooltip(item, result, doc) {
+  const enabled = (doc: vscode.TextDocument) => config(doc).get('enabled', true);
+  const showNumbers = (doc: vscode.TextDocument) => enabled(doc) && config(doc).get('showNumbers', true);
+  function tooltip(item: NumberItem, result: NumberModel, doc: vscode.TextDocument): string {
     const t = translator(vscode, doc);
     return `${t('kind.' + item.kind)}: ${item.number || t('missingNumber')}\n${item.title}\n${result.stale ? '⚠ ' + t('stale') : t('compiled')}`;
   }
-  const provider = {
+  const provider: vscode.CodeLensProvider = {
     onDidChangeCodeLenses: change.event,
     async provideCodeLenses(doc, token) {
       if (!showNumbers(doc)) return [];
@@ -257,11 +200,8 @@ function activateNumbers(context, analyze) {
   context.subscriptions.push(watcher, watcher.onDidChange(refresh), watcher.onDidCreate(refresh), watcher.onDidDelete(refresh));
   context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(refresh));
   context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(refresh));
-  let timer;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(() => { clearTimeout(timer); timer = setTimeout(refresh, 200); }));
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('latexStructureHighlight') || event.affectsConfiguration('latex-workshop.latex.outDir')) refresh(); }));
   context.subscriptions.push({ dispose() { clearTimeout(timer); } });
 }
-exports.activateNumbers = activateNumbers;
-exports.parseCompiled = parseCompiled;
-exports.group = group;
