@@ -1,0 +1,108 @@
+% !TeX program = pdflatex
+% Valid document. Compile twice; see warnings-en.tex for deliberate errors.
+\documentclass[11pt]{report}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{3}
+\lstdefinestyle{sample}{
+  basicstyle=\ttfamily\small,
+  numbers=left,stepnumber=1,numberfirstline=true,numberblanklines=false,
+  numbersep=8pt,frame=single,breaklines=true
+}
+\lstset{style=sample}
+\title{LaTeX Structure Highlight: English Sample}
+\author{Example document}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{A readable document}
+\label{chap:overview}
+\section{Experiment design}
+\label{sec:design}
+Each heading level has its own editor color. Compile twice to display actual
+numbers above headings and references. Decorations do not change this PDF.
+
+\subsection{Data preparation}
+\label{sec:data}
+Use \texttt{data\_file.csv} for a file name. The escaped underscore is valid.
+The inline literal \verb|raw_name| is valid too.
+
+\subsubsection{Input validation}
+\label{sec:validation}
+Math subscripts $x_i$ and \(y_j\) should not receive underscore warnings.
+The sample enables numbering down to subparagraph with \texttt{secnumdepth=5}.
+
+\paragraph{Implementation details}
+\label{sec:implementation}
+This numbered paragraph demonstrates another heading color.
+\subparagraph{A smaller detail}
+\label{sec:detail}
+This heading is numbered too.
+\subsection*{An unnumbered note}
+Starred headings stay unnumbered and receive no compiled-number hint.
+
+\section{Figures, tables and equations}
+\label{sec:results}
+See Figure~\ref{fig:flow}, Table~\ref{tab:counts}, and Equation~\eqref{eq:mean}.
+An automatic reference is \autoref{fig:flow}. A citation is \cite{sample2026}.
+
+\begin{figure}[htbp]
+  \centering
+  \fbox{\rule{0pt}{18mm}\rule{0.65\linewidth}{0pt}}
+  \caption{A placeholder for the processing flow}
+  \label{fig:flow}
+\end{figure}
+\begin{table}[htbp]
+  \centering
+  \caption{Example item counts}
+  \label{tab:counts}
+  \begin{tabular}{lr}
+    Group & Count \\
+    \hline
+    Training & 80 \\
+    Validation & 20 \\
+  \end{tabular}
+\end{table}
+\begin{equation}
+  \bar{x} = \frac{1}{n}\sum_{i=1}^{n}x_i
+  \label{eq:mean}
+\end{equation}
+Paired display-math delimiters are valid:
+\[
+  \left(\sum_{i=1}^{n}x_i\right)^2 \geq 0.
+\]
+
+\section{Code and listing line numbers}
+\label{sec:code}
+The first block inherits the style and starts at ten. The language is explicit
+on each block for grammar-based syntax colors.
+\begin{lstlisting}[language=Python,firstnumber=10]
+def normalize(value):
+    cleaned = value.strip()
+
+    return cleaned.lower()
+\end{lstlisting}
+Continue numbering, showing even numbers plus the first line:
+\begin{lstlisting}[language=Python,firstnumber=last,stepnumber=2]
+values = [" Alpha ", " BETA "]
+normalized = [normalize(value) for value in values]
+print(normalized)
+\end{lstlisting}
+Restart at one, with numbers on the right:
+\begin{lstlisting}[language=Python,numbers=right,firstnumber=1]
+for index, value in enumerate(normalized):
+    print(index, value)
+\end{lstlisting}
+
+\begin{thebibliography}{9}
+  \bibitem{sample2026}
+  Example Author. \emph{A Fictional Guide to Readable Documents}. 2026.
+  Sample data, not a real publication.
+\end{thebibliography}
+\end{document}

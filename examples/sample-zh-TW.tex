@@ -1,0 +1,120 @@
+% !TeX program = xelatex
+% 本文件可正常編譯，請編譯兩次；刻意錯誤另見 warnings-zh-TW.tex。
+\documentclass[UTF8,fontset=none,11pt]{ctexrep}
+% Use an installed Traditional Chinese font; no font files are bundled.
+\newcommand{\setexampleCJK}[1]{
+  \setCJKmainfont[AutoFakeSlant=0.2]{#1}
+  \setCJKsansfont{#1}
+  \setCJKmonofont{#1}
+}
+\IfFontExistsTF{Noto Serif CJK TC}{\setexampleCJK{Noto Serif CJK TC}}{
+  \IfFontExistsTF{Noto Serif TC}{\setexampleCJK{Noto Serif TC}}{
+    \IfFontExistsTF{PingFang TC}{\setexampleCJK{PingFang TC}}{
+      \PackageError{sample-font}{Install Noto Serif CJK TC or Noto Serif TC}
+        {This sample requires an installed Traditional Chinese font.}
+    }
+  }
+}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{3}
+\lstdefinestyle{sample}{
+  basicstyle=\ttfamily\small,
+  numbers=left,stepnumber=1,numberfirstline=true,numberblanklines=false,
+  numbersep=8pt,frame=single,breaklines=true
+}
+\lstset{style=sample}
+\title{LaTeX Structure Highlight：繁體中文範例}
+\author{示範文件}
+\date{}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\chapter{更容易閱讀的文件}
+\label{chap:overview}
+\section{實驗設計}
+\label{sec:design}
+每一層標題在編輯器中都有不同顏色。編譯兩次後，可以在標題與引用上方看到實際編號。
+這些標示不會改變 PDF 的外觀。
+
+\subsection{資料準備}
+\label{sec:data}
+檔名可以寫成 \texttt{data\_file.csv}，跳脫後的底線是合法的。
+行內字面文字 \verb|raw_name| 也合法。
+
+\subsubsection{輸入檢查}
+\label{sec:validation}
+數學下標 $x_i$ 與 \(y_j\) 不應被當成錯誤底線。
+本範例以 \texttt{secnumdepth=5} 開啟至 subparagraph 的編號。
+
+\paragraph{實作細節}
+\label{sec:implementation}
+這個有編號的段落示範另一層標題配色。
+\subparagraph{更小的細節}
+\label{sec:detail}
+這一層標題也有編號。
+\subsection*{不編號的補充說明}
+星號標題維持不編號，也不顯示編譯編號提示。
+
+\section{圖、表與公式}
+\label{sec:results}
+請參考圖~\ref{fig:flow}、表~\ref{tab:counts} 與公式~\eqref{eq:mean}。
+自動引用範例為 \autoref{fig:flow}，文獻引用範例為 \cite{sample2026}。
+
+\begin{figure}[htbp]
+  \centering
+  \fbox{\rule{0pt}{18mm}\rule{0.65\linewidth}{0pt}}
+  \caption{資料處理流程的示意框}
+  \label{fig:flow}
+\end{figure}
+\begin{table}[htbp]
+  \centering
+  \caption{範例資料筆數}
+  \label{tab:counts}
+  \begin{tabular}{lr}
+    分組 & 筆數 \\
+    \hline
+    訓練資料 & 80 \\
+    驗證資料 & 20 \\
+  \end{tabular}
+\end{table}
+\begin{equation}
+  \bar{x} = \frac{1}{n}\sum_{i=1}^{n}x_i
+  \label{eq:mean}
+\end{equation}
+成對的展示型數學分隔符號是合法的：
+\[
+  \left(\sum_{i=1}^{n}x_i\right)^2 \geq 0.
+\]
+
+\section{程式碼與區塊行號}
+\label{sec:code}
+第一個區塊沿用 style，從第十號開始。各區塊也明確指定語言，方便語法文法辨識。
+\begin{lstlisting}[language=Python,firstnumber=10]
+def normalize(value):
+    cleaned = value.strip()
+
+    return cleaned.lower()
+\end{lstlisting}
+接續編號，顯示偶數行號，並沿用第一行強制顯示的設定：
+\begin{lstlisting}[language=Python,firstnumber=last,stepnumber=2]
+values = [" Alpha ", " BETA "]
+normalized = [normalize(value) for value in values]
+print(normalized)
+\end{lstlisting}
+重新從一開始，並把行號放在右側：
+\begin{lstlisting}[language=Python,numbers=right,firstnumber=1]
+for index, value in enumerate(normalized):
+    print(index, value)
+\end{lstlisting}
+
+\begin{thebibliography}{9}
+  \bibitem{sample2026}
+  範例作者。\emph{容易閱讀的文件：虛構指南}。2026。
+  此為示範資料，並非真實出版品。
+\end{thebibliography}
+\end{document}

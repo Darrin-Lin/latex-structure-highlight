@@ -1,0 +1,22 @@
+\documentclass{article}
+\lstset{language=Python,numbers=left}
+\begin{document}
+\section{實驗設計}
+\subsection{資料處理}
+\subsubsection{輸入資料}
+\paragraph{實作細節}
+讀取 \texttt{data\_file.csv}，避免 raw_name。
+參考 \ref{fig:flow} 與 \cite{paper2026}。
+\begin{figure}
+  \caption{資料處理流程}\label{fig:flow}
+\end{figure}
+\begin{lstlisting}[firstnumber=10]
+def process(data):
+    result = data.strip()
+    print("Ready")
+    return result
+\end{lstlisting}
+\begin{itemize}
+  \item 尚未結束的環境
+\textbf{這裡少了一個右大括號
+\end{document}

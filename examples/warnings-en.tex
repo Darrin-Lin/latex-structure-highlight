@@ -1,0 +1,20 @@
+% Intentionally invalid editor snippets. Do NOT compile this file.
+% Independent cases; this is not a complete LaTeX document.
+
+% Raw underscores should be red; escaped underscores should not.
+plain_name
+\texttt{unsafe_name}
+\texttt{safe\_name}
+
+% These math/literal underscores should not be warned about.
+$x_i$ \(y_j\) \verb|raw_name|
+
+% Closing delimiters without openings should be red.
+\end{table}
+}
+\]
+
+% These openings deliberately have no matching close.
+\begin{figure}
+\textbf{An unfinished argument
+\[

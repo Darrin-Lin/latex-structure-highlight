@@ -1,0 +1,92 @@
+<div id="latex-color-review" aria-label="LaTeX 配色審閱">
+  <style>
+    #latex-color-review { --editor-bg: #0d1117; --editor-fg: #e6edf3; --editor-muted: #8b949e; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    #latex-color-review .review-controls { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px; color: light-dark(#24292f, #e6edf3); }
+    #latex-color-review label { display: flex; gap: 8px; align-items: center; }
+    #latex-color-review select { font: inherit; color: light-dark(#24292f, #e6edf3); background: light-dark(#ffffff, #161b22); padding: 7px 12px; border: 1px solid light-dark(#d0d7de, #484f58); border-radius: 5px; max-width: 100%; }
+    #latex-color-review .editor { background: var(--editor-bg); color: var(--editor-fg); border-radius: 8px; overflow: hidden; }
+    #latex-color-review .editor-tab { padding: 12px 18px; border-bottom: 1px solid color-mix(in srgb, var(--editor-muted) 25%, transparent); display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+    #latex-color-review .editor-tab small { color: var(--editor-muted); }
+    #latex-color-review .source { padding: 12px 12px 18px 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.75; }
+    #latex-color-review .source-row { display: grid; grid-template-columns: 40px minmax(0,1fr); align-items: start; }
+    #latex-color-review .gutter { text-align: right; padding-right: 13px; color: var(--editor-muted); user-select:none; }
+    #latex-color-review .line-content { min-width:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+    #latex-color-review .lens { color:var(--editor-muted); font-size: 11px; line-height:1.4; margin-left:40px; padding-top:2px; }
+    #latex-color-review .listing-number { display:inline-block; min-width:3ch; margin-right:1.2em; text-align:right; color:var(--editor-muted); }
+    #latex-color-review .error { text-decoration: underline; text-underline-offset:3px; font-weight:700; }
+    #latex-color-review .status { color:var(--editor-muted); font-size:12px; padding:8px 16px; border-top:1px solid color-mix(in srgb, var(--editor-muted) 25%, transparent); }
+    @media (max-width:480px) { #latex-color-review .review-controls { gap:12px; } #latex-color-review label { flex:1 1 100%; justify-content:space-between; } #latex-color-review .source { font-size:12px; } }
+  </style>
+  <div class="review-controls">
+    <label><span data-ui="palette">配色</span><select id="latex-review-palette" aria-label="Highlight palette"></select></label>
+    <label><span data-ui="language">語言</span><select id="latex-review-language" aria-label="Preview language"><option value="zh-TW">繁體中文</option><option value="en">English</option></select></label>
+  </div>
+  <div class="editor" aria-label="LaTeX source color illustration">
+    <div class="editor-tab"><span>review.tex</span><small data-ui="illustration">配色示意 · 非 VS Code 截圖</small></div>
+    <div class="source" aria-label="Heading, reference, code and warning preview"></div>
+    <div class="status" aria-live="polite"></div>
+  </div>
+  <script type="application/json" id="latex-review-data">{"source":"\\documentclass{article}\n\\lstset{language=Python,numbers=left}\n\\begin{document}\n\\section{實驗設計}\n\\subsection{資料處理}\n\\subsubsection{輸入資料}\n\\paragraph{實作細節}\n讀取 \\texttt{data\\_file.csv}，避免 raw_name。\n參考 \\ref{fig:flow} 與 \\cite{paper2026}。\n\\begin{figure}\n  \\caption{資料處理流程}\\label{fig:flow}\n\\end{figure}\n\\begin{lstlisting}[firstnumber=10]\ndef process(data):\n    result = data.strip()\n    print(\"Ready\")\n    return result\n\\end{lstlisting}\n\\begin{itemize}\n  \\item 尚未結束的環境\n\\textbf{這裡少了一個右大括號\n\\end{document}\n","spans":{"preamble":[[0,62]],"code":[[291,408]],"environment":[[62,78],[291,309],[408,424],[425,440],[476,490]],"figure":[[228,242],[278,290]],"table":[],"math":[],"caption":[[245,261]],"label":[[261,277]],"reference":[[193,208]],"citation":[[210,226]],"part":[],"chapter":[],"section":[[79,93]],"subsection":[[94,111]],"subsubsection":[[112,132]],"paragraph":[[133,149]],"subparagraph":[],"texttt":[[161,175]],"unsafeUnderscore":[[183,184]],"unclosed":[[425,440],[464,465]]},"listingLines":[{"at":326,"end":344,"number":"10","side":"left"},{"at":345,"end":370,"number":"11","side":"left"},{"at":371,"end":389,"number":"12","side":"left"},{"at":390,"end":407,"number":"13","side":"left"}],"palettes":{"githubDark":{"part":"#FFB86C","chapter":"#FFB86C","section":"#79C0FF","subsection":"#7EE787","subsubsection":"#D2A8FF","paragraph":"#FFA657","subparagraph":"#F2CC60","environment":"#56D4DD","figure":"#F2CC60","table":"#FFA657","math":"#D2A8FF","caption":"#E3B341","label":"#8B949E","reference":"#79C0FF","citation":"#F778BA","texttt":"#A5D6FF","codeText":"#A5D6D9","codeBackground":"#79C0FF0D","error":"#FF7B72","errorBackground":"#F8514933"},"githubLight":{"part":"#953800","chapter":"#953800","section":"#0550AE","subsection":"#116329","subsubsection":"#6639BA","paragraph":"#953800","subparagraph":"#7D4E00","environment":"#0A6269","figure":"#7D4E00","table":"#953800","math":"#6639BA","caption":"#7D4E00","label":"#57606A","reference":"#0550AE","citation":"#A40E26","texttt":"#0A6269","codeText":"#0A6269","codeBackground":"#0969DA0A","error":"#CF222E","errorBackground":"#FF818233"},"dracula":{"part":"#FFB86C","chapter":"#FFB86C","section":"#BD93F9","subsection":"#50FA7B","subsubsection":"#FF79C6","paragraph":"#F1FA8C","subparagraph":"#8BE9FD","environment":"#8BE9FD","figure":"#F1FA8C","table":"#FFB86C","math":"#BD93F9","caption":"#F1FA8C","label":"#A4ACD4","reference":"#8BE9FD","citation":"#FF79C6","texttt":"#50FA7B","codeText":"#C5D8F7","codeBackground":"#6272A41A","error":"#FF8383","errorBackground":"#FF555533"},"nord":{"part":"#D28C76","chapter":"#D28C76","section":"#88C0D0","subsection":"#A3BE8C","subsubsection":"#B793B0","paragraph":"#EBCB8B","subparagraph":"#81A1C1","environment":"#8FBCBB","figure":"#EBCB8B","table":"#D28C76","math":"#B793B0","caption":"#EBCB8B","label":"#AAB4C5","reference":"#88C0D0","citation":"#B793B0","texttt":"#8FBCBB","codeText":"#A9CCD2","codeBackground":"#88C0D010","error":"#D9A0A6","errorBackground":"#BF616A33"},"solarizedDark":{"part":"#D7744C","chapter":"#D7744C","section":"#3A95D6","subsection":"#859900","subsubsection":"#B589D6","paragraph":"#B58900","subparagraph":"#2AA198","environment":"#2AA198","figure":"#B58900","table":"#D7744C","math":"#B589D6","caption":"#B58900","label":"#93A1A1","reference":"#3A95D6","citation":"#DE66A0","texttt":"#2AA198","codeText":"#94C8BD","codeBackground":"#2AA19812","error":"#E7726F","errorBackground":"#DC322F33"},"solarizedLight":{"part":"#A83E12","chapter":"#A83E12","section":"#176DA8","subsection":"#657600","subsubsection":"#6368B4","paragraph":"#8A6800","subparagraph":"#187A73","environment":"#187A73","figure":"#8A6800","table":"#A83E12","math":"#6368B4","caption":"#8A6800","label":"#586E75","reference":"#176DA8","citation":"#B3296D","texttt":"#187A73","codeText":"#187A73","codeBackground":"#2AA1980D","error":"#B92926","errorBackground":"#DC322F26"}},"locales":{"en":{"missingNumber":"No compiled number yet","stale":"Source changed; showing results from the last compilation.","compiled":"Result from the last compilation.","missingAux":"Numbers: no compiled data · select AUX","auxFilter":"Compiled LaTeX AUX","useAux":"Use compiled AUX","selectTheme":"Select a LaTeX highlight palette","scheme.auto":"Auto (follow editor)","scheme.githubDark":"GitHub Dark (inspired)","scheme.githubLight":"GitHub Light (inspired)","scheme.dracula":"Dracula (inspired)","scheme.nord":"Nord (inspired)","scheme.solarizedDark":"Solarized Dark (inspired)","scheme.solarizedLight":"Solarized Light (inspired)","codeColorApplied":"Embedded LaTeX code text color applied. More specific syntax colors are retained.","kind.part":"Part","kind.chapter":"Chapter","kind.section":"Section","kind.subsection":"Subsection","kind.subsubsection":"Subsubsection","kind.paragraph":"Paragraph","kind.subparagraph":"Subparagraph","kind.Figure":"Figure","kind.Table":"Table","kind.Caption":"Caption","kind.reference":"Reference","kind.citation":"Citation","kind.label":"Label"},"zh-TW":{"missingNumber":"尚無編譯編號","stale":"原始碼已更新；這是上次編譯的結果。","compiled":"上次編譯的結果。","missingAux":"編號：尚無編譯資料 · 點此選擇 AUX","auxFilter":"編譯後的 LaTeX AUX","useAux":"使用此 AUX 檔案","selectTheme":"選擇 LaTeX 標示配色","scheme.auto":"自動（跟隨編輯器）","scheme.githubDark":"GitHub 深色（靈感配色）","scheme.githubLight":"GitHub 淺色（靈感配色）","scheme.dracula":"Dracula（靈感配色）","scheme.nord":"Nord（靈感配色）","scheme.solarizedDark":"Solarized 深色（靈感配色）","scheme.solarizedLight":"Solarized 淺色（靈感配色）","codeColorApplied":"已套用 LaTeX 嵌入程式碼文字色，保留更具體的語法配色。","kind.part":"部","kind.chapter":"章","kind.section":"節","kind.subsection":"小節","kind.subsubsection":"次小節","kind.paragraph":"段落","kind.subparagraph":"次段落","kind.Figure":"圖","kind.Table":"表","kind.Caption":"圖說／表說","kind.reference":"交叉引用","kind.citation":"文獻引用","kind.label":"標籤"}}}</script>
+  <script>
+    (() => {
+      const root = document.getElementById('latex-color-review');
+      const data = JSON.parse(document.getElementById('latex-review-data').textContent);
+      const paletteSelect = root.querySelector('#latex-review-palette');
+      const languageSelect = root.querySelector('#latex-review-language');
+      const state = { palette: 'githubDark', language: 'zh-TW' };
+      const backgrounds = { githubDark:['#0d1117','#e6edf3','#8b949e'],githubLight:['#ffffff','#24292f','#57606a'],dracula:['#282a36','#f8f8f2','#a4acd4'],nord:['#2e3440','#eceff4','#aab4c5'],solarizedDark:['#002b36','#93a1a1','#93a1a1'],solarizedLight:['#fdf6e3','#586e75','#586e75'] };
+      const sourceLines = data.source.split('\n');
+      const lenses = { 3:'3',4:'3.1',5:'3.1.1',6:'3.1.1.1',8:'4    [12]',10:'4' };
+      const errorKinds = new Set(['unsafeUnderscore','unclosed']);
+      const boldKinds = /^(part|chapter|section|subsection|subsubsection|paragraph|subparagraph|environment|figure|table|math)$/;
+      const escape = text => text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      function render() {
+        const palette = data.palettes[state.palette];
+        const messages = data.locales[state.language];
+        const english = state.language === 'en';
+        const bg = backgrounds[state.palette];
+        root.style.setProperty('--editor-bg',bg[0]); root.style.setProperty('--editor-fg',bg[1]); root.style.setProperty('--editor-muted',bg[2]);
+        paletteSelect.innerHTML = Object.keys(data.palettes).map(key => `<option value="${key}">${escape(messages['scheme.'+key])}</option>`).join('');
+        paletteSelect.value = state.palette; languageSelect.value = state.language;
+        root.querySelector('[data-ui="palette"]').textContent = english ? 'Palette' : '配色';
+        root.querySelector('[data-ui="language"]').textContent = english ? 'Language' : '語言';
+        root.querySelector('[data-ui="illustration"]').textContent = english ? 'Color illustration · not a VS Code screenshot' : '配色示意 · 非 VS Code 截圖';
+        let offset = 0;
+        const rows = sourceLines.map((text,lineIndex) => {
+          if (lineIndex === sourceLines.length-1 && text === '') return '';
+          const lineStart = offset, lineEnd = offset + text.length; offset = lineEnd+1;
+          const codeBlock = (data.spans.code || []).find(([a,b]) => lineStart >= a && lineStart < b);
+          const codeBody = codeBlock && lineStart > codeBlock[0];
+          const number = data.listingLines.find(line => line.at === lineStart);
+          let content = '';
+          for (let i=0; i<text.length; i++) {
+            const at = lineStart+i;
+            const kinds = Object.keys(data.spans).filter(kind => (data.spans[kind] || []).some(([a,b]) => at>=a && at<b));
+            let color = codeBody ? palette.codeText : bg[1];
+            let weight = 400, italic = false;
+            for (const kind of kinds) { if (palette[kind]) color=palette[kind]; if(boldKinds.test(kind))weight=700; if(kind==='label')italic=true; }
+            const error = kinds.some(kind=>errorKinds.has(kind));
+            if(error) color=palette.error;
+            const style = `color:${color};font-weight:${weight};${italic?'font-style:italic;':''}${error?'background:'+palette.errorBackground+';':''}${kinds.includes('preamble')?'opacity:0.58;':''}`;
+            content += `<span style="${style}"${error?' class="error"':''}>${escape(text[i])}</span>`;
+          }
+          if(number) content=`<span class="listing-number">${escape(number.number)}</span>`+content;
+          const lens = lenses[lineIndex] ? `<div class="lens">${lenses[lineIndex]}</div>` : '';
+          return lens+`<div class="source-row"${codeBlock?` style="background:${palette.codeBackground}"`:''}><span class="gutter">${lineIndex+1}</span><span class="line-content">${content || ' '}</span></div>`;
+        }).join('');
+        root.querySelector('.source').innerHTML=rows;
+        root.querySelector('.status').textContent=english ? 'Example numbers · tinted monospaced text · red underlined warnings' : '編號為示例 · 等寬文字分色 · 紅色底線警示';
+      }
+      function save() {
+        if(window.openai && window.openai.setWidgetState) window.openai.setWidgetState({modelContent:state,privateContent:null}).catch(()=>{});
+      }
+      const saved = window.openai && window.openai.widgetState;
+      const choices = saved && (saved.modelContent || saved);
+      if(choices && data.palettes[choices.palette])state.palette=choices.palette;
+      if(choices && data.locales[choices.language])state.language=choices.language;
+      paletteSelect.addEventListener('change',()=>{state.palette=paletteSelect.value;render();save();});
+      languageSelect.addEventListener('change',()=>{state.language=languageSelect.value;render();save();});
+      render();
+    })();
+  </script>
+</div>
