@@ -1,20 +1,13 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const vm = require('node:vm');
-const root = path.resolve(__dirname, '..');
-function load(file) {
-  const box = { exports: {}, require: id => id === 'vscode' ? {} : require(path.join(root, id)) };
-  vm.runInNewContext(fs.readFileSync(path.join(root, file), 'utf8'), box);
-  return box.exports;
-}
-const analyzer = load('extension.js');
+const analyzer = require('../out/src/analyzer');
 const source = fs.readFileSync(path.join(__dirname, 'sample.tex'), 'utf8');
 const spans = analyzer.analyze(source);
 const data = {
   source, spans,
-  listingLines: load('listing-lines.js').computeListingLines(source, spans.code, analyzer.visibleSource),
-  palettes: require('../palettes').palettes,
+  listingLines: require('../out/src/listing-parser').computeListingLines(source, spans.code, analyzer.visibleSource),
+  palettes: require('../out/src/palettes').palettes,
   locales: { en: require('../locales/en.json'), 'zh-TW': require('../locales/zh-TW.json') }
 };
 const preview = path.join(__dirname, 'latex-color-review.html');

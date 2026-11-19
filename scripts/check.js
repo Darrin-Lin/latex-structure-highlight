@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 function walk(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
-    if (['.git', 'node_modules', 'dist', 'build'].includes(entry.name)) return [];
+    if (['.git', 'node_modules', 'out', 'dist', 'build'].includes(entry.name)) return [];
     const file = path.join(dir, entry.name);
     return entry.isDirectory() ? walk(file) : [file];
   });

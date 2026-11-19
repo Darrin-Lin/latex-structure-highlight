@@ -15,7 +15,7 @@
     "onLanguage:latex",
     "onLanguage:tex"
   ],
-  "main": "./extension.js",
+  "main": "./out/src/extension.js",
   "contributes": {
     "commands": [
       {
@@ -197,17 +197,27 @@
     "url": "https://github.com/Darrin-Lin/latex-structure-highlight.git"
   },
   "scripts": {
-    "test": "node --test",
-    "check": "node scripts/check.js",
-    "package": "python3 scripts/package.py"
+    "test": "npm run compile && node --test out/test/*.test.js",
+    "check": "npm run typecheck && node scripts/check.js",
+    "package": "npm run compile && python3 scripts/package.py",
+    "compile": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "watch": "tsc -p . --watch",
+    "review:data": "npm run compile && node review/build-data.js"
   },
   "files": [
-    "*.js",
-    "package*.json",
-    "locales/*.json",
+    "package.json",
+    "package.nls*.json",
     "README.md",
     "README.zh-TW.md",
     "LICENSE",
-    "THIRD_PARTY_NOTICES.md"
-  ]
+    "THIRD_PARTY_NOTICES.md",
+    "out/src/**/*.js",
+    "out/locales/*.json"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.19.43",
+    "@types/vscode": "1.90.0",
+    "typescript": "~5.9.3"
+  }
 }

@@ -12,7 +12,7 @@ description = manifest['description']
 if description.startswith('%') and description.endswith('%'):
     description = messages[description[1:-1]]
 files = sorted({file for pattern in manifest['files'] for file in ROOT.glob(pattern) if file.is_file()})
-for required in ['extension.js', 'package.json', 'LICENSE', 'THIRD_PARTY_NOTICES.md']:
+for required in [manifest['main'].removeprefix('./'), 'package.json', 'LICENSE', 'THIRD_PARTY_NOTICES.md']:
     if ROOT / required not in files:
         raise ValueError('Missing required package file: ' + required)
 if any(file.is_symlink() or not file.resolve().is_relative_to(ROOT) for file in files):
