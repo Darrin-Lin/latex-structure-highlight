@@ -1,6 +1,6 @@
 # Third-party palette references
 
-The six highlighting presets in `palettes.js` use or adapt colors associated
+The six highlighting presets in `src/palettes.ts` use or adapt colors associated
 with the following projects. These are independently arranged, **inspired**
 highlighting palettes, not the official complete editor themes. Some accents
 have been adjusted for contrast. Theme names identify their inspiration;
@@ -46,4 +46,7 @@ The runtime uses Node.js built-ins and the VS Code extension API; no runtime
 npm dependencies or LaTeX syntax grammars are shipped. Syntax highlighting
 comes from the user's separately installed language extension. CI references
 GitHub Actions by name; those actions are downloaded by CI, not bundled here.
-The review illustration uses system fonts and original sample text.
+The review illustration uses system fonts and original sample text. TypeScript
+and Node/VS Code type definitions are development-only dependencies recorded
+in package-lock.json; the compiler and type-definition packages are not bundled
+in the runtime VSIX. Their own notices remain in the installed npm packages.

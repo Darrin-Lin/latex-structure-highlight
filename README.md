@@ -2,171 +2,126 @@
 
 [English](README.md) · [繁體中文](README.zh-TW.md)
 
-Make LaTeX source easier to scan in VS Code with heading colors, environment
-markers, reference colors, code backgrounds, compiled-number hints, and warnings.
-It changes the **editor display**, not your source or PDF. It complements your
-installed LaTeX language extension; no grammar or compiler is bundled.
+Find headings, environments and references faster in VS Code. LaTeX Structure
+Highlight adds configurable colors, compiled-number hints and visual warnings
+to your LaTeX source without changing the document or its PDF output.
 
-This is a local development draft, not a published Marketplace release.
-
-## Try the bilingual samples
-
-- [English document](examples/sample-en.tex): compile twice with pdfLaTeX.
-- [Traditional Chinese document](examples/sample-zh-TW.tex): compile twice with XeLaTeX.
-- [English warning snippets](examples/warnings-en.tex) / [中文警示片段](examples/warnings-zh-TW.tex): intentionally invalid; **do not compile**.
-
-Open this folder in VS Code and press **F5** to launch an Extension Development
-Host with the English sample. Open the Chinese sample there to compare features.
-No runtime npm dependencies are required. Development requires Node.js 20+ and
-Python 3.9+. Run `npm run check`, `npm test`, then `npm run package` to produce a
-local VSIX under `dist/`. These commands need no npm package installation.
-
-From the repository root:
-
-```sh
-mkdir -p examples/build
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory=examples/build examples/sample-en.tex
-pdflatex -interaction=nonstopmode -halt-on-error -output-directory=examples/build examples/sample-en.tex
-xelatex -interaction=nonstopmode -halt-on-error -output-directory=examples/build examples/sample-zh-TW.tex
-xelatex -interaction=nonstopmode -halt-on-error -output-directory=examples/build examples/sample-zh-TW.tex
-```
-
-The Chinese sample requires `ctex` and an installed Traditional Chinese font.
-It tries **Noto Serif CJK TC**, **Noto Serif TC**, then macOS **PingFang TC**.
-Install one of the Noto families on other platforms; font files are not bundled.
-Both samples use an inline bibliography and a drawn placeholder,
-so BibTeX/Biber and external images are unnecessary. Recompile after changes to
-update references.
-
-For this output folder, run **LaTeX: Select Compiled AUX File** and select
-`examples/build/sample-en.aux` or `examples/build/sample-zh-TW.aux` for the
-corresponding source file. If a packaged VSIX is provided, use **Extensions → … →
-Install from VSIX…**, then **Developer: Reload Window**.
+This extension is tailored to the author's personal LaTeX editing preferences.
+Its palettes and visual checks may not suit every document or workflow. Treat
+warnings as editing aids and confirm errors with your LaTeX compiler; a lack of
+warnings does not guarantee that a document is valid.
 
 ## Features
 
-| Source | Editor display |
+- Distinct colors for headings, from `\part` and `\chapter` to `\subparagraph`.
+- Emphasized `\begin`/`\end`, captions, labels, cross-references and citations.
+- Separate colors for `\texttt{...}`, a dimmed preamble and subtle code backgrounds.
+- Actual heading, figure, table and reference numbers above source lines after compilation.
+- `lstlisting` line-number previews using global, style and per-block settings.
+- Red underlines for unescaped text underscores and unmatched environments or delimiters.
+- Six highlight palettes, individual color overrides, and English/Traditional Chinese UI.
+
+## Install
+
+Requires **VS Code 1.90 or later**. Install a LaTeX language extension, such as
+LaTeX Workshop, to provide the underlying syntax highlighting. A TeX distribution
+is needed to compile documents and generate number data.
+
+1. Obtain the extension's `.vsix` package. To build one yourself, see [Contributing](CONTRIBUTING.md).
+2. In VS Code, open **Extensions → … → Install from VSIX…** and select the package.
+3. Run **Developer: Reload Window** if prompted, then open a `.tex` file.
+
+## Get started
+
+Colors and warnings appear automatically. Compile your document to populate
+number hints; references may require a second compilation.
+
+Open the Command Palette (`Cmd+Shift+P` on macOS, `Ctrl+Shift+P` on Windows/Linux):
+
+| Command | Action |
 | --- | --- |
-| `\part`, `\chapter`, `\section` through `\subparagraph` | Different colors and bold text for heading levels |
-| `\begin` / `\end` | Emphasized delimiters; figure, table and common math environments have dedicated colors |
-| `\caption`, `\label`, reference and citation commands | Distinct caption, identifier, cross-reference and citation colors |
-| `\texttt{...}` | Separate inline text color |
-| Preamble before `\begin{document}` | Dimmed; default opacity 58% |
-| Literal code blocks | Subtle backgrounds; native grammar supplies syntax colors |
-| Unescaped `_` in ordinary text | Red text, background and underline |
-| Unmatched environments, groups and math delimiters | Red text, background and underline |
+| **LaTeX: Select Highlight Color Scheme** | Choose a palette |
+| **LaTeX: Toggle Actual Numbers** | Show or hide compiled-number hints |
+| **LaTeX: Select Compiled AUX File** | Locate number data when automatic detection fails |
+| **LaTeX: Apply Embedded Code Text Color** | Apply the selected base color to embedded code |
 
-Escaped `\_`, standard math, comments, literal code, and common reference/URL/file
-arguments are excluded from underscore warnings. `\texttt` does not make a raw
-underscore legal: write `\texttt{data\_file.csv}`.
+The interface follows VS Code's display language by default.
 
-## Color schemes
+### Choose colors
 
-Run **LaTeX: Select Highlight Color Scheme**, or set
-`latexStructureHighlight.colorScheme` to `auto`, `githubDark`, `githubLight`,
-`dracula`, `nord`, `solarizedDark`, or `solarizedLight`.
+Available palettes: `githubDark`, `githubLight`, `dracula`, `nord`,
+`solarizedDark`, and `solarizedLight`. The default `auto` follows the editor's
+light/dark appearance. Palettes style the LaTeX highlights while keeping your
+editor theme.
 
-`auto` follows the editor light/dark appearance. These are **inspired palettes**
-for LaTeX decorations, not replacements for the complete VS Code theme.
+For custom colors, add settings such as:
 
 ```json
 {
   "latexStructureHighlight.colorScheme": "githubDark",
-  "latexStructureHighlight.preambleOpacity": 0.58,
   "latexStructureHighlight.colors": {
     "section": "#79C0FF",
     "subsection": "#7EE787",
     "texttt": "#A5D6FF",
-    "codeText": "#A5D6D9",
-    "error": "#FF7B72"
+    "codeText": "#A5D6D9"
   }
 }
 ```
 
-Overrides accept `#RRGGBB` or `#RRGGBBAA`. Keys: `part`, `chapter`, `section`,
-`subsection`, `subsubsection`, `paragraph`, `subparagraph`, `environment`,
-`figure`, `table`, `math`, `caption`, `label`, `reference`, `citation`, `texttt`,
-`codeText`, `codeBackground`, `error`, and `errorBackground`.
+Use `#RRGGBB` or `#RRGGBBAA`. VS Code's Settings editor lists the available color
+keys and options for preamble dimming, code backgrounds and number hints.
 
-After choosing a palette or changing `codeText`, run **LaTeX: Apply Embedded Code
-Text Color** to apply the code base color. This explicit command updates a named
-LaTeX-only rule in user-level `editor.tokenColorCustomizations`, preserving other
-rules. More specific syntax colors can take precedence. Switching palettes alone
-does not rewrite that rule. Remove `LaTeX embedded code base text` to undo it.
+After changing palettes or `codeText`, run **Apply Embedded Code Text Color** to
+update the code base color. Specific keyword/string/comment colors can take
+precedence. This command saves a rule named `LaTeX embedded code base text` in
+your user token-color settings; remove that rule to undo it.
 
-## Actual compiled numbers
+### Show compiled numbers
 
-Numbers appear as CodeLens **above source lines**, for example `3.1`, without a
-heading-type prefix. They stay visible; there is no individual collapse or
-double-click interaction. Hover previews are available.
+Number hints use the last compilation's AUX/BBL data. The extension follows
+`% !TeX root = ...` and LaTeX Workshop's output-directory setting. For a custom
+build location, use **Select Compiled AUX File** to choose the root `.aux` file.
 
-- **LaTeX: Toggle Actual Numbers** switches all number hints on/off.
-- **LaTeX: Select Compiled AUX File** selects the compiled root AUX manually.
-- VS Code's `editor.codeLens` must be enabled.
+Enable VS Code's `editor.codeLens` setting if hints are not visible. Recompile
+when hints show a stale-data warning. Starred headings remain unnumbered;
+paragraph numbering follows your document's `secnumdepth`.
 
-The extension reads the last compilation's root/included AUX and optional BBL.
-It follows `% !TeX root = ...` and LaTeX Workshop's output-folder setting, with
-nearby `out`/`build` fallbacks. Figure/table numbers appear on caption and label
-lines. No numbers are guessed when data are missing; starred headings are skipped.
-Paragraph numbering depends on the document's `secnumdepth`; the samples use `5`.
+### Preview listing line numbers
 
-Bibliography support includes classic numeric `bibcite`, natbib stored labels,
-and biblatex BBL records containing `labelnumber`. It does not reproduce every
-author/year style. Source newer than the root AUX is flagged, but other stale
-project dependencies may go undetected.
+Specify the language on the block to enable the installed grammar's syntax colors:
 
-## Listing line numbers
+```latex
+\begin{lstlisting}[language=Python,numbers=left,firstnumber=10]
+def greet(name):
+    print(name)
+\end{lstlisting}
+```
 
-The current-file preview reads literal `\lstdefinestyle`, `\lstset`, `style=...`
-and local block options. It supports `numbers=left|right|none`, numeric
-`firstnumber`, `firstnumber=auto|last`, `stepnumber`, `numberfirstline`,
-`numberblanklines`, and same-name continuation. Local options override preceding
-global/style values. Declare the language on the block, such as
-`\begin{lstlisting}[language=Python]`, for grammar-based syntax colors.
+Number previews also read `\lstset` and `\lstdefinestyle` in the current file.
+Supported options include `numbers`, `firstnumber` (`auto`, `last` or a number),
+`stepnumber`, `numberfirstline`, `numberblanklines`, and named-listing continuation.
 
-Numbers are beside code, separate from source-file gutter numbers. Right-side
-numbers follow each line's text, not the PDF right margin. Font, `numberstyle`,
-`numbersep`, TeX scoping, macros, external settings and custom counter formats
-are not reproduced. Blocks using `firstline`, `lastline`, or `linerange` skip
-this preview. Use displayed blocks with the header before the first code line.
+## Examples
 
-## Settings and language
+- [English document](examples/sample-en.tex)
+- [繁體中文文件](examples/sample-zh-TW.tex)
+- [Sample compilation guide](examples/README.md)
+- Intentional warning examples: [English](examples/warnings-en.tex) / [繁體中文](examples/warnings-zh-TW.tex). Open these in the editor; do not compile them.
 
-All setting names below have the prefix `latexStructureHighlight.`.
+## Limitations
 
-| Suffix | Default | Purpose |
-| --- | --- | --- |
-| `enabled` | `true` | Decorations and number hints |
-| `dimPreamble` | `true` | Preamble dimming |
-| `preambleOpacity` | `0.58` | Preamble opacity (`0.1`–`1`) |
-| `codeBackground` | `true` | Code backgrounds |
-| `listingLineNumbers` | `true` | Listing line-number preview |
-| `showNumbers` | `true` | Compiled-number CodeLens |
-| `auxFile` | `""` | Explicit root AUX path |
-| `colorScheme` | `"auto"` | Palette |
-| `colors` | `{}` | Individual color overrides |
+- Visual checks inspect one file without expanding TeX macros or custom catcodes. They complement compiler diagnostics.
+- Escaped `\_`, standard math, literal code and common identifier/URL arguments are excluded from underscore warnings. Inside ordinary `\texttt`, write `\_` for a literal underscore.
+- Compiled numbers require existing build data. Not every author/year citation style or stale cross-file dependency can be resolved.
+- Listing previews do not reproduce TeX fonts, spacing, macro-defined options or external settings. Blocks using `firstline`, `lastline` or `linerange` skip line-number previews. Right-side numbers follow each source line rather than the PDF margin.
 
-English and Traditional Chinese translations are included. UI labels and prompts
-follow VS Code's display language by default; no separate language selection is
-required. Source text and numbering are not translated. The draft retains an
-advanced runtime `language` override; static command/settings labels still follow
-VS Code's language.
+## Privacy and license
 
-## Limits and privacy
+The extension sends no network requests or telemetry. It reads local compiler
+output and stores selected AUX paths in extension workspace state. The explicit
+code-color command changes your user settings; uninstalling does not remove that rule.
 
-Unclosed checks cover environments, braces, `$`/`$$`, `\(`/`\)`, `\[`/`\]`,
-`\left`/`\right`, explicit grouping commands and `\verb`. They inspect one file
-without macro expansion, conditional compilation or catcode evaluation.
-Constructs deliberately split across files may be flagged. These visual checks
-are not a substitute for compiler diagnostics.
-
-The runtime sends no network requests or telemetry. It reads local compiler
-output and stores selected AUX paths in extension workspace state. Decorations
-do not edit source. The explicit code-color command changes the user setting
-described above; uninstalling does not remove that user token-color rule.
-
-## License and attribution
-
-Original code is private and `UNLICENSED`; see [LICENSE](LICENSE). Upstream
-palette licenses remain intact; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
-This is not an official GitHub, Dracula, Nord, or Solarized theme.
+See [LICENSE](LICENSE) for original code terms and
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for palette attribution.
+The palettes are inspired adaptations, without affiliation or endorsement by
+GitHub, Dracula, Nord or Solarized.
