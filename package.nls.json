@@ -1,0 +1,17 @@
+{
+  "extension.description": "LaTeX structure colors, compiled numbers, listing line numbers and delimiter warnings.",
+  "command.toggleNumbers": "LaTeX: Toggle Actual Numbers",
+  "command.selectAux": "LaTeX: Select Compiled AUX File",
+  "command.selectTheme": "LaTeX: Select Highlight Color Scheme",
+  "command.applyCodeTextColor": "LaTeX: Apply Embedded Code Text Color",
+  "config.enabled": "Enable LaTeX structure decorations.",
+  "config.dimPreamble": "Dim content before begin{document}.",
+  "config.codeBackground": "Add a subtle code-block background while retaining syntax colors.",
+  "config.showNumbers": "Display numbers from the last compilation above source lines.",
+  "config.listingLineNumbers": "Preview literal lstlisting numbering options in the current file.",
+  "config.auxFile": "Compiled root AUX path; absolute or relative to the workspace.",
+  "config.language": "Language of runtime hints and prompts. Settings and command labels follow the VS Code display language.",
+  "config.colorScheme": "Highlight palette; auto follows the editor light/dark appearance.",
+  "config.colors": "Override individual palette colors with #RRGGBB or #RRGGBBAA.",
+  "config.preambleOpacity": "Opacity of the dimmed preamble."
+}

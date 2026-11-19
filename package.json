@@ -1,0 +1,213 @@
+{
+  "name": "latex-structure-highlight",
+  "displayName": "LaTeX Structure Highlight",
+  "description": "%extension.description%",
+  "version": "0.5.0",
+  "publisher": "local-personal",
+  "engines": {
+    "vscode": "^1.90.0",
+    "node": ">=20"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:latex",
+    "onLanguage:tex"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "latexStructureHighlight.toggleNumbers",
+        "title": "%command.toggleNumbers%"
+      },
+      {
+        "command": "latexStructureHighlight.selectAux",
+        "title": "%command.selectAux%"
+      },
+      {
+        "command": "latexStructureHighlight.selectTheme",
+        "title": "%command.selectTheme%"
+      },
+      {
+        "command": "latexStructureHighlight.applyCodeTextColor",
+        "title": "%command.applyCodeTextColor%"
+      }
+    ],
+    "configuration": {
+      "title": "LaTeX Structure Highlight",
+      "properties": {
+        "latexStructureHighlight.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.enabled%"
+        },
+        "latexStructureHighlight.dimPreamble": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.dimPreamble%"
+        },
+        "latexStructureHighlight.codeBackground": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.codeBackground%"
+        },
+        "latexStructureHighlight.showNumbers": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.showNumbers%"
+        },
+        "latexStructureHighlight.listingLineNumbers": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.listingLineNumbers%"
+        },
+        "latexStructureHighlight.auxFile": {
+          "type": "string",
+          "default": "",
+          "description": "%config.auxFile%"
+        },
+        "latexStructureHighlight.language": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "en",
+            "zh-TW"
+          ],
+          "default": "auto",
+          "description": "%config.language%"
+        },
+        "latexStructureHighlight.colorScheme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "githubDark",
+            "githubLight",
+            "dracula",
+            "nord",
+            "solarizedDark",
+            "solarizedLight"
+          ],
+          "default": "auto",
+          "description": "%config.colorScheme%"
+        },
+        "latexStructureHighlight.colors": {
+          "type": "object",
+          "default": {},
+          "description": "%config.colors%",
+          "additionalProperties": false,
+          "properties": {
+            "part": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "chapter": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "section": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "subsection": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "subsubsection": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "paragraph": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "subparagraph": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "environment": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "figure": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "table": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "math": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "caption": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "label": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "reference": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "citation": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "texttt": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "codeText": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "codeBackground": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "error": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            },
+            "errorBackground": {
+              "type": "string",
+              "pattern": "^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$"
+            }
+          }
+        },
+        "latexStructureHighlight.preambleOpacity": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1,
+          "default": 0.58,
+          "description": "%config.preambleOpacity%"
+        }
+      }
+    }
+  },
+  "private": true,
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Darrin-Lin/latex-structure-highlight.git"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node scripts/check.js",
+    "package": "python3 scripts/package.py"
+  },
+  "files": [
+    "*.js",
+    "package*.json",
+    "locales/*.json",
+    "README.md",
+    "README.zh-TW.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
+  ]
+}

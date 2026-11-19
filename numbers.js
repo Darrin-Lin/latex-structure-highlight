@@ -1,0 +1,267 @@
+'use strict';
+const vscode = require('vscode');
+const path = require('path');
+const { translator } = require('./i18n');
+
+function group(text, start) {
+  let i = start;
+  while (i < text.length && /\s/.test(text[i])) i++;
+  if (text[i] !== '{') return null;
+  const begin = ++i;
+  let depth = 1;
+  while (i < text.length) {
+    if (text[i] === '\\' && /[{}%\\]/.test(text[i + 1] || '')) { i += 2; continue; }
+    if (text[i] === '{') depth++;
+    if (text[i] === '}' && --depth === 0) return { value: text.slice(begin, i), end: i + 1 };
+    i++;
+  }
+  return null;
+}
+function groups(text) {
+  const result = [];
+  let at = 0, next;
+  while ((next = group(text, at))) { result.push(next.value); at = next.end; }
+  return result;
+}
+function clean(text) {
+  return text.replace(/\\(?:protect|ignorespaces|relax)\b/g, '')
+    .replace(/\\[a-zA-Z@]+\*?/g, '').replace(/[{}]/g, '').replace(/[~\s]+/g, ' ').trim();
+}
+function parseCompiled(text, data = { labels: new Map(), citations: new Map(), entries: [], inputs: [] }) {
+  const pattern = /\\(newlabel|bibcite|contentsline|@input|entry)\b/g;
+  let match;
+  while ((match = pattern.exec(text))) {
+    const first = group(text, pattern.lastIndex);
+    if (!first) continue;
+    if (match[1] === '@input') { data.inputs.push(first.value); continue; }
+    const second = group(text, first.end);
+    if (!second) continue;
+    if (match[1] === 'newlabel') {
+      const fields = groups(second.value);
+      if (fields.length >= 2 && !/@cref$/.test(first.value)) data.labels.set(first.value, { number: clean(fields[0]), page: clean(fields[1]), title: clean(fields[2] || ''), anchor: fields[3] || '' });
+    } else if (match[1] === 'bibcite') {
+      const fields = groups(second.value);
+      data.citations.set(first.value, clean(fields.length ? fields[0] : second.value));
+    } else if (match[1] === 'contentsline') {
+      const numberline = /\\numberline\s*/.exec(second.value);
+      if (numberline) {
+        const number = group(second.value, numberline.index + numberline[0].length);
+        if (number) data.entries.push({ kind: first.value, number: clean(number.value), title: clean(second.value.slice(number.end)) });
+      }
+    } else if (match[1] === 'entry') {
+      const end = text.indexOf('\\endentry', second.end);
+      if (end !== -1) {
+        const body = text.slice(second.end, end);
+        const number = /\\field\{labelnumber\}\s*/.exec(body);
+        if (number) {
+          const value = group(body, number.index + number[0].length);
+          const prefix = /\\field\{labelprefix\}\s*/.exec(body);
+          const prefixValue = prefix && group(body, prefix.index + prefix[0].length);
+          if (value) data.citations.set(first.value, clean((prefixValue ? prefixValue.value : '') + value.value));
+        }
+      }
+    }
+  }
+  return data;
+}
+
+function activateNumbers(context, analyze) {
+  const change = new vscode.EventEmitter();
+  const auxOverrides = new Map(Object.entries(context.workspaceState.get('auxOverrides', {})));
+  const cache = new Map();
+  const watched = new Set();
+  const selector = [{ language: 'latex' }, { language: 'tex' }];
+  const config = doc => vscode.workspace.getConfiguration('latexStructureHighlight', doc.uri);
+  function refresh() { cache.clear(); change.fire(); }
+  function watch(file) {
+    if (watched.has(file)) return;
+    watched.add(file);
+    const watcher = vscode.workspace.createFileSystemWatcher(new vscode.RelativePattern(path.dirname(file), path.basename(file)));
+    context.subscriptions.push(watcher, watcher.onDidChange(refresh), watcher.onDidCreate(refresh), watcher.onDidDelete(refresh));
+  }
+  async function exists(file) {
+    try { return await vscode.workspace.fs.stat(vscode.Uri.file(file)); } catch { return null; }
+  }
+  async function read(file) { return Buffer.from(await vscode.workspace.fs.readFile(vscode.Uri.file(file))).toString('utf8'); }
+  async function locate(doc) {
+    const folder = vscode.workspace.getWorkspaceFolder(doc.uri);
+    const base = folder ? folder.uri.fsPath : path.dirname(doc.uri.fsPath);
+    const explicit = auxOverrides.get(doc.uri.toString()) || config(doc).get('auxFile', '');
+    if (explicit) return { aux: path.resolve(base, explicit), root: doc.uri.fsPath };
+    let root = doc.uri.fsPath, content = doc.getText();
+    const visited = new Set();
+    // Follow explicit TeX root directives without guessing an unrelated master file.
+    for (let i = 0; i < 8 && !visited.has(root); i++) {
+      visited.add(root);
+      const directive = /^\s*%\s*!\s*tex\s+root\s*=\s*(.+?)\s*$/im.exec(content);
+      if (!directive) break;
+      root = path.resolve(path.dirname(root), directive[1].replace(/^['"]|['"]$/g, ''));
+      try { content = await read(root); } catch { break; }
+    }
+    const dir = path.dirname(root), stem = path.basename(root, path.extname(root));
+    const workshop = vscode.workspace.getConfiguration('latex-workshop', doc.uri);
+    const outDir = workshop.get('latex.outDir', '%DIR%');
+    const configuredDir = outDir.replace(/%DIR%/g, dir).replace(/%DOC%/g, root.slice(0, -path.extname(root).length)).replace(/%DOCFILE%/g, stem).replace(/%WORKSPACE_FOLDER%/g, base);
+    const candidates = [path.resolve(dir, configuredDir, stem + '.aux'), path.join(dir, stem + '.aux'), path.join(dir, 'out', stem + '.aux'), path.join(dir, 'build', stem + '.aux')];
+    for (const aux of [...new Set(candidates)]) if (await exists(aux)) return { aux, root };
+    return { aux: candidates[0], root };
+  }
+  async function load(doc) {
+    const { aux, root } = await locate(doc);
+    watch(aux);
+    watch(aux.replace(/\.aux$/i, '.bbl'));
+    const stat = await exists(aux);
+    if (!stat) return { missing: true, aux };
+    const data = parseCompiled('');
+    const seen = new Set();
+    async function readAux(file, depth = 0) {
+      if (seen.has(file) || depth > 12 || seen.size > 100) return;
+      seen.add(file);
+      watch(file);
+      try {
+        const part = parseCompiled(await read(file));
+        for (const [key, value] of part.labels) data.labels.set(key, value);
+        for (const [key, value] of part.citations) data.citations.set(key, value);
+        data.entries.push(...part.entries);
+        for (const input of part.inputs) await readAux(path.resolve(path.dirname(aux), input), depth + 1);
+      } catch { /* A failed or partial build may leave an input AUX missing. */ }
+    }
+    await readAux(aux);
+    for (const suffix of ['.bbl']) {
+      try { parseCompiled(await read(aux.replace(/\.aux$/i, suffix)), data); } catch { /* Optional bibliography output. */ }
+    }
+    const rootStat = await exists(root), docStat = await exists(doc.uri.fsPath);
+    return { data, aux, stale: doc.isDirty || (rootStat && rootStat.mtime > stat.mtime) || (docStat && docStat.mtime > stat.mtime) };
+  }
+  async function model(doc) {
+    const key = doc.uri.toString();
+    const previous = cache.get(key);
+    if (previous && previous.version === doc.version) return previous.promise;
+    const promise = makeModel(doc);
+    cache.set(key, { version: doc.version, promise });
+    try { return await promise; } catch { cache.delete(key); return { items: [], error: true }; }
+  }
+  async function makeModel(doc) {
+    const compiled = await load(doc);
+    if (compiled.missing) return { ...compiled, items: [] };
+    const text = doc.getText(), spans = analyze(text), items = [], counts = new Map();
+    const entries = compiled.data.entries;
+    const usedEntries = new Set();
+    function add(kind, start, end, title, number) {
+      const identity = `${kind}:${title}`;
+      const occurrence = counts.get(identity) || 0;
+      counts.set(identity, occurrence + 1);
+      items.push({ kind, start, end, title, number, id: `${doc.uri.toString()}|${identity}|${occurrence}` });
+    }
+    function argumentsAt(start, end) {
+      const raw = text.slice(start, end);
+      const command = /^\\[A-Za-z@]+\*?/.exec(raw);
+      let at = command ? command[0].length : 0;
+      // The main analyzer already balances arguments; optional notes aren't reference keys.
+      while (at < raw.length && /\s/.test(raw[at])) at++;
+      while (raw[at] === '[') {
+        let depth = 1; at++;
+        while (at < raw.length && depth) { if (raw[at] === '[') depth++; if (raw[at] === ']') depth--; at++; }
+        while (at < raw.length && /\s/.test(raw[at])) at++;
+      }
+      const arg = group(raw, at);
+      return { raw, arg: arg ? arg.value : '' };
+    }
+    for (const kind of ['part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'subparagraph', 'caption']) {
+      for (const [start, end] of spans[kind]) {
+        const { raw, arg } = argumentsAt(start, end);
+        if (/^\\\w+\*/.test(raw)) continue; // Starred commands are intentionally unnumbered.
+        const title = clean(arg);
+        let candidate = entries.findIndex((entry, i) => !usedEntries.has(i) && (kind === 'caption' ? ['figure', 'table'].includes(entry.kind) : entry.kind === kind) && entry.title === title);
+        // Labels identify headings/captions with an optional short title or TeX formatting.
+        const following = text.slice(end, end + 250);
+        const nearbyLabel = /^\s*(?:%[^\n]*\n\s*)*\\label\s*\{([^}]+)\}/.exec(following);
+        const labeled = nearbyLabel && compiled.data.labels.get(nearbyLabel[1]);
+        let number = labeled ? labeled.number : candidate !== -1 ? entries[candidate].number : null;
+        if (candidate !== -1) usedEntries.add(candidate);
+        let labelKind = kind;
+        if (kind === 'caption') labelKind = labeled && /^table/.test(labeled.anchor) ? 'Table' : candidate !== -1 ? entries[candidate].kind === 'table' ? 'Table' : 'Figure' : 'Caption';
+        add(labelKind, start, end, title, number);
+      }
+    }
+    for (const kind of ['label', 'reference', 'citation']) {
+      for (const [start, end] of spans[kind]) {
+        const { raw, arg } = argumentsAt(start, end);
+        const keys = arg.split(',').map(key => key.trim()).filter(Boolean);
+        if (!keys.length) continue;
+        const values = keys.map(key => {
+          if (kind === 'citation') return compiled.data.citations.get(key) || '?';
+          const label = compiled.data.labels.get(key);
+          if (!label) return '?';
+          if (/^\\(?:pageref|cpageref|Cpageref|vpageref)/.test(raw)) return label.page;
+          if (/^\\nameref/.test(raw)) return label.title || '?';
+          const category = label.anchor.split('.')[0];
+          const prefix = /^(figure|table|section|subsection|subsubsection|chapter|equation)$/.test(category) ? category[0].toUpperCase() + category.slice(1) + ' ' : '';
+          return (/^\\(?:auto|Auto|c|C)ref/.test(raw) ? prefix : '') + label.number;
+        });
+        add(kind, start, end, arg, values.every(value => value === '?') ? null : kind === 'citation' ? '[' + values.join(', ') + ']' : values.join(', '));
+      }
+    }
+    return { ...compiled, items };
+  }
+  const enabled = doc => config(doc).get('enabled', true);
+  const showNumbers = doc => enabled(doc) && config(doc).get('showNumbers', true);
+  function tooltip(item, result, doc) {
+    const t = translator(vscode, doc);
+    return `${t('kind.' + item.kind)}: ${item.number || t('missingNumber')}\n${item.title}\n${result.stale ? '⚠ ' + t('stale') : t('compiled')}`;
+  }
+  const provider = {
+    onDidChangeCodeLenses: change.event,
+    async provideCodeLenses(doc, token) {
+      if (!showNumbers(doc)) return [];
+      const t = translator(vscode, doc);
+      const result = await model(doc);
+      if (token.isCancellationRequested) return [];
+      if (result.missing) return [new vscode.CodeLens(new vscode.Range(0, 0, 0, 0), { title: t('missingAux'), command: 'latexStructureHighlight.selectAux', arguments: [doc.uri] })];
+      return result.items.map(item => {
+        const position = doc.positionAt(item.start);
+        const label = item.number || t('missingNumber');
+        return new vscode.CodeLens(new vscode.Range(position, position), { title: `${result.stale ? '⚠ ' : ''}${label}`, tooltip: tooltip(item, result, doc), command: '' });
+      });
+    }
+  };
+  context.subscriptions.push(change, vscode.languages.registerCodeLensProvider(selector, provider));
+  context.subscriptions.push(vscode.languages.registerHoverProvider(selector, {
+    async provideHover(doc, position, token) {
+      if (!enabled(doc)) return;
+      const result = await model(doc);
+      if (token.isCancellationRequested || !result.items) return;
+      const offset = doc.offsetAt(position);
+      const item = result.items.find(item => offset >= item.start && offset <= item.end);
+      if (!item) return;
+      const message = new vscode.MarkdownString();
+      message.appendText(tooltip(item, result, doc));
+      return new vscode.Hover(message, new vscode.Range(doc.positionAt(item.start), doc.positionAt(item.end)));
+    }
+  }));
+  context.subscriptions.push(vscode.commands.registerCommand('latexStructureHighlight.toggleNumbers', async () => {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+    await config(editor.document).update('showNumbers', !config(editor.document).get('showNumbers', true), vscode.ConfigurationTarget.Global);
+  }));
+  context.subscriptions.push(vscode.commands.registerCommand('latexStructureHighlight.selectAux', async uri => {
+    const doc = uri ? await vscode.workspace.openTextDocument(uri) : vscode.window.activeTextEditor && vscode.window.activeTextEditor.document;
+    if (!doc) return;
+    const selected = await vscode.window.showOpenDialog({ canSelectMany: false, filters: { [translator(vscode, doc)('auxFilter')]: ['aux'] }, openLabel: translator(vscode, doc)('useAux') });
+    if (!selected || !selected[0]) return;
+    auxOverrides.set(doc.uri.toString(), selected[0].fsPath);
+    await context.workspaceState.update('auxOverrides', Object.fromEntries(auxOverrides));
+    refresh();
+  }));
+  const watcher = vscode.workspace.createFileSystemWatcher('**/*.{aux,bbl,toc,lof,lot}');
+  context.subscriptions.push(watcher, watcher.onDidChange(refresh), watcher.onDidCreate(refresh), watcher.onDidDelete(refresh));
+  context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(refresh));
+  context.subscriptions.push(vscode.window.onDidChangeActiveTextEditor(refresh));
+  let timer;
+  context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(() => { clearTimeout(timer); timer = setTimeout(refresh, 200); }));
+  context.subscriptions.push(vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('latexStructureHighlight') || event.affectsConfiguration('latex-workshop.latex.outDir')) refresh(); }));
+  context.subscriptions.push({ dispose() { clearTimeout(timer); } });
+}
+exports.activateNumbers = activateNumbers;
+exports.parseCompiled = parseCompiled;
+exports.group = group;

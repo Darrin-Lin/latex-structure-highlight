@@ -1,0 +1,17 @@
+{
+  "extension.description": "LaTeX 結構配色、編譯編號、程式碼行號與未配對符號提示。",
+  "command.toggleNumbers": "LaTeX：切換實際編號顯示",
+  "command.selectAux": "LaTeX：選擇編譯後的 AUX 檔案",
+  "command.selectTheme": "LaTeX：選擇語法標示配色",
+  "command.applyCodeTextColor": "LaTeX：套用嵌入程式碼文字色",
+  "config.enabled": "啟用 LaTeX 結構標示。",
+  "config.dimPreamble": "淡化 begin{document} 之前的內容。",
+  "config.codeBackground": "為程式碼區塊加上淡底色，保留語法配色。",
+  "config.showNumbers": "在原始碼上方顯示上次編譯產生的編號。",
+  "config.listingLineNumbers": "預覽目前檔案中 lstlisting 的行號設定。",
+  "config.auxFile": "主文件的編譯 AUX 路徑，可為絕對路徑或相對於工作區的路徑。",
+  "config.language": "執行時提示與對話的語言。設定與指令名稱依 VS Code 顯示語言切換。",
+  "config.colorScheme": "標示配色；auto 會依編輯器的深色／淺色外觀切換。",
+  "config.colors": "以 #RRGGBB 或 #RRGGBBAA 自訂個別標示顏色。",
+  "config.preambleOpacity": "導言區淡化後的不透明度。"
+}
