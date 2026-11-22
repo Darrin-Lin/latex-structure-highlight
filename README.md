@@ -115,6 +115,10 @@ Supported options include `numbers`, `firstnumber` (`auto`, `last` or a number),
 - Compiled numbers require existing build data. Not every author/year citation style or stale cross-file dependency can be resolved.
 - Listing previews do not reproduce TeX fonts, spacing, macro-defined options or external settings. Blocks using `firstline`, `lastline` or `linerange` skip line-number previews. Right-side numbers follow each source line rather than the PDF margin.
 
+## Enumerated lists
+
+`enumerate` items also show numbers using the same number-display toggle. Items with a `\label` use its compiled AUX number. Unlabeled standard lists preview four levels (`1.`, `(a)`, `i.`, `A.`), even before compilation; hover identifies these as previews. Explicit `\item[...]` labels are left unchanged. Custom list options, redefined labels and counter changes need compiled labels; unsupported numbering is omitted.
+
 ## Privacy and license
 
 The extension sends no network requests or telemetry. It reads local compiler
