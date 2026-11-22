@@ -26,5 +26,7 @@
   "kind.Caption": "圖說／表說",
   "kind.reference": "交叉引用",
   "kind.citation": "文獻引用",
-  "kind.label": "標籤"
+  "kind.label": "標籤",
+  "kind.enumeration": "清單項目",
+  "enumerationPreview": "標準 enumerate 編號預覽；實際結果以編譯輸出為準。"
 }

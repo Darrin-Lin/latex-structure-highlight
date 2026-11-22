@@ -26,5 +26,7 @@
   "kind.Caption": "Caption",
   "kind.reference": "Reference",
   "kind.citation": "Citation",
-  "kind.label": "Label"
+  "kind.label": "Label",
+  "kind.enumeration": "List item",
+  "enumerationPreview": "Standard enumerate preview; compiler output may differ."
 }

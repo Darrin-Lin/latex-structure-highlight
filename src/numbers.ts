@@ -1,9 +1,10 @@
 import * as vscode from 'vscode';
 import * as path from 'node:path';
+import { enumerationItems } from './enumeration';
 import { translator } from './i18n';
 import { parseCompiled, group, clean } from './compiled-data';
 import type { Analysis, Analyzer, CompiledData } from './types';
-interface NumberItem { kind: string; start: number; end: number; title: string; number: string | null; id: string }
+interface NumberItem { kind: string; start: number; end: number; title: string; number: string | null; id: string; preview?: boolean }
 interface NumberModel { items: NumberItem[]; aux?: string; missing?: boolean; stale?: boolean; error?: boolean }
 interface CompiledOutput { data: CompiledData; aux: string; stale: boolean; missing?: false }
 interface MissingOutput { missing: true; aux: string }
@@ -86,9 +87,9 @@ export function activateNumbers(context: vscode.ExtensionContext, analyze: Analy
   }
   async function makeModel(doc: vscode.TextDocument): Promise<NumberModel> {
     const compiled = await load(doc);
-    if (compiled.missing) return { ...compiled, items: [] };
+    const data = compiled.missing ? parseCompiled('') : compiled.data;
     const text = doc.getText(), spans = analyze(text), items: NumberItem[] = [], counts = new Map<string, number>();
-    const entries = compiled.data.entries;
+    const entries = data.entries;
     const usedEntries = new Set<number>();
     function add(kind: string, start: number, end: number, title: string, number: string | null): void {
       const identity = `${kind}:${title}`;
@@ -119,7 +120,7 @@ export function activateNumbers(context: vscode.ExtensionContext, analyze: Analy
         // Labels identify headings/captions with an optional short title or TeX formatting.
         const following = text.slice(end, end + 250);
         const nearbyLabel = /^\s*(?:%[^\n]*\n\s*)*\\label\s*\{([^}]+)\}/.exec(following);
-        const labeled = nearbyLabel && compiled.data.labels.get(nearbyLabel[1]);
+        const labeled = nearbyLabel && data.labels.get(nearbyLabel[1]);
         let number = labeled ? labeled.number : candidate !== -1 ? entries[candidate].number : null;
         if (candidate !== -1) usedEntries.add(candidate);
         let labelKind = kind;
@@ -133,8 +134,8 @@ export function activateNumbers(context: vscode.ExtensionContext, analyze: Analy
         const keys = arg.split(',').map(key => key.trim()).filter(Boolean);
         if (!keys.length) continue;
         const values = keys.map(key => {
-          if (kind === 'citation') return compiled.data.citations.get(key) || '?';
-          const label = compiled.data.labels.get(key);
+          if (kind === 'citation') return data.citations.get(key) || '?';
+          const label = data.labels.get(key);
           if (!label) return '?';
           if (/^\\(?:pageref|cpageref|Cpageref|vpageref)/.test(raw)) return label.page;
           if (/^\\nameref/.test(raw)) return label.title || '?';
@@ -145,13 +146,17 @@ export function activateNumbers(context: vscode.ExtensionContext, analyze: Analy
         add(kind, start, end, arg, values.every(value => value === '?') ? null : kind === 'citation' ? '[' + values.join(', ') + ']' : values.join(', '));
       }
     }
+    for (const item of enumerationItems(text, data)) {
+      add('enumeration', item.start, item.end, '', item.number);
+      items[items.length - 1].preview = !item.compiled;
+    }
     return { ...compiled, items };
   }
   const enabled = (doc: vscode.TextDocument) => config(doc).get('enabled', true);
   const showNumbers = (doc: vscode.TextDocument) => enabled(doc) && config(doc).get('showNumbers', true);
   function tooltip(item: NumberItem, result: NumberModel, doc: vscode.TextDocument): string {
     const t = translator(vscode, doc);
-    return `${t('kind.' + item.kind)}: ${item.number || t('missingNumber')}\n${item.title}\n${result.stale ? '⚠ ' + t('stale') : t('compiled')}`;
+    return `${t('kind.' + item.kind)}: ${item.number || t('missingNumber')}\n${item.title}\n${item.preview ? t('enumerationPreview') : result.stale ? '⚠ ' + t('stale') : t('compiled')}`;
   }
   const provider: vscode.CodeLensProvider = {
     onDidChangeCodeLenses: change.event,
@@ -160,12 +165,12 @@ export function activateNumbers(context: vscode.ExtensionContext, analyze: Analy
       const t = translator(vscode, doc);
       const result = await model(doc);
       if (token.isCancellationRequested) return [];
-      if (result.missing) return [new vscode.CodeLens(new vscode.Range(0, 0, 0, 0), { title: t('missingAux'), command: 'latexStructureHighlight.selectAux', arguments: [doc.uri] })];
-      return result.items.map(item => {
+      const missingLens = result.missing ? [new vscode.CodeLens(new vscode.Range(0, 0, 0, 0), { title: t('missingAux'), command: 'latexStructureHighlight.selectAux', arguments: [doc.uri] })] : [];
+      return [...missingLens, ...result.items.filter(item => !result.missing || item.preview).map(item => {
         const position = doc.positionAt(item.start);
         const label = item.number || t('missingNumber');
-        return new vscode.CodeLens(new vscode.Range(position, position), { title: `${result.stale ? '⚠ ' : ''}${label}`, tooltip: tooltip(item, result, doc), command: '' });
-      });
+        return new vscode.CodeLens(new vscode.Range(position, position), { title: `${!item.preview && result.stale ? '⚠ ' : ''}${label}`, tooltip: tooltip(item, result, doc), command: '' });
+      })];
     }
   };
   context.subscriptions.push(change, vscode.languages.registerCodeLensProvider(selector, provider));
