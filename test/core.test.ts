@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { enumerationItems } from '../src/enumeration';
 import { analyze, visibleSource } from '../src/analyzer';
 import { parseCompiled } from '../src/compiled-data';
 import { computeListingLines } from '../src/listing-parser';
@@ -63,4 +64,37 @@ test('palette overrides are validated and do not mutate presets', () => {
   assert.equal(resolvePalette('nord', false, { section:'#123456', error:'invalid' }).section, '#123456');
   assert.equal(resolvePalette('nord', false, { error:'invalid' }).error, palettes.nord.error);
   assert.notEqual(palettes.nord.section, '#123456');
+});
+
+
+test('enumerate previews nest, reset and ignore explicit labels and literal code', () => {
+  const text = String.raw`\begin{enumerate}
+\item One
+\begin{enumerate}\item Two
+\begin{enumerate}\item Three
+\begin{enumerate}\item Four\end{enumerate}
+\end{enumerate}\end{enumerate}
+\begin{itemize}\item No number\end{itemize}
+\item[Special] Custom
+% \item Comment
+\verb|\item|
+\begin{lstlisting}
+\item Literal
+\end{lstlisting}
+\item Next
+\end{enumerate}
+\begin{enumerate}\item Reset\end{enumerate}`;
+  assert.deepEqual(enumerationItems(text, parseCompiled('')).map(item => item.number),
+    ['1.', '(a)', 'i.', 'A.', '2.', '1.']);
+});
+
+test('enumerate uses compiled labels and skips unsupported custom counters', () => {
+  const text = String.raw`\begin{enumerate}[label=\Alph*.]
+\item Custom\label{item:a}
+\item Unknown
+\end{enumerate}`;
+  const data = parseCompiled(String.raw`\newlabel{item:a}{{C}{1}{}{Item.1}{}}`);
+  assert.deepEqual(enumerationItems(text, data).map(item => [item.number, item.compiled]), [['C', true]]);
+  assert.equal(enumerationItems(String.raw`\renewcommand{\labelenumi}{X}\begin{document}\begin{enumerate}\item A\end{enumerate}`, data).length, 0);
+  assert.equal(enumerationItems(String.raw`\begin{enumerate}\setcounter{enumi}{9}\item A\end{enumerate}`, data).length, 0);
 });
